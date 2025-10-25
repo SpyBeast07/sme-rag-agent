@@ -1,0 +1,10 @@
+transformers
+sentence-transformers
+torch
+datasets
+pypdf
+python-docx
+python-pptx
+elasticsearch
+tqdm
+python-dotenv
