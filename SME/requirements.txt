@@ -1,0 +1,23 @@
+torch
+datasets
+elasticsearch
+tqdm
+python-dotenv
+
+fastapi
+uvicorn
+langchain
+langchain-google-genai
+google-generativeai
+langchain-core
+langchain-text-splitters
+# Your RAG libraries:
+sentence-transformers
+faiss-cpu
+transformers
+pypdf
+python-docx
+python-pptx
+# Tool libraries:
+fpdf2
+reportlab
