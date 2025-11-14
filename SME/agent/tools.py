@@ -99,6 +99,9 @@ def send_email(
 
     if not (smtp_host and smtp_user and smtp_pass):
         return False, "SMTP credentials not configured (SMTP_HOST/SMTP_USER/SMTP_PASS)."
+    
+    if not to_email:
+        return False, "No email address provided"
 
     msg = EmailMessage()
     msg["From"] = smtp_user

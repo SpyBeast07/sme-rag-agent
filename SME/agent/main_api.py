@@ -3,8 +3,6 @@ import os, json, time, logging, requests
 from dotenv import load_dotenv
 load_dotenv()
 
-LMSTUDIO_URL = os.getenv("LMSTUDIO_URL", "").rstrip("/")
-LM_MODEL_NAME = os.getenv("LM_MODEL_NAME", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 

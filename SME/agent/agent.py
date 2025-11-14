@@ -21,10 +21,9 @@ except Exception:
     # fallback to agent/rag_retriever if you copied it there
     from retriever import RAGRetriever  # type: ignore
 
-LMSTUDIO_URL = os.getenv("LMSTUDIO_URL")  # e.g. http://localhost:11434/v1/generate (user might set)
-LM_MODEL_NAME = os.getenv("LM_MODEL_NAME", "Mistral-7B-Instruct-v0.2")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 
 class SMEAgent:
     def __init__(self):
@@ -45,7 +44,7 @@ class SMEAgent:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=GEMINI_API_KEY)
-                model = genai.GenerativeModel("gemini-2.5-flash")
+                model = genai.GenerativeModel(model_name=GEMINI_MODEL)
                 # use a text/generation model; this API may differ by package version
                 resp = model.generate_content(prompt)
                 # many versions: check fields
@@ -57,7 +56,7 @@ class SMEAgent:
             except Exception as e:
                 raise RuntimeError(f"Failed to call Gemini: {e}")
 
-        raise RuntimeError("No LLM configured. Set LMSTUDIO_URL or GEMINI_API_KEY in .env")
+        raise RuntimeError("No LLM configured. Set GEMINI_API_KEY in .env")
     
     def _build_chat_context(self, last_n=5):
         msgs = self.memory[-last_n:]
@@ -83,6 +82,7 @@ class SMEAgent:
 
     # --- simple QA using RAG + LLM ---
     def answer_question(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+        query = query.strip()
         # add to memory
         self.memory.append({"role": "user", "text": query, "ts": time.time()})
 
@@ -211,6 +211,7 @@ Produce the handout as plain text (with headings)."""
         Ask the LLM to create a simple JSON execution plan.
         Returns a dict with key "steps": list of step dicts.
         """
+        task_description = task_description.strip()
         chat_history = self._build_chat_context(last_n=6)
         prompt = f"""
 You are a planning assistant. Convert the following task into a JSON plan.
@@ -304,7 +305,7 @@ Rules:
             # ---- ACTION HANDLERS ----
             if action == "rag_search":
                 # input_text is query
-                docs = self.retriever.hybrid_search(input_text, top_k=5)
+                docs = self.retriever.hybrid_search(input_text.strip(), top_k=5)
                 results[sid] = {"type": "rag", "value": "\n".join([d["text"] for d in docs]), "docs": docs}
 
             elif action == "llm_generate":
@@ -337,35 +338,59 @@ Rules:
                     if "send" in input_text.lower() and not email_to:
                         email_to = DEFAULT_EMAIL
 
-                    # attachments may reference filenames or step ids
+                    # Resolve attachments from step results or direct files
                     att = raw_input.get("attachment") or raw_input.get("attachments")
                     if att:
-                        # normalize to list
                         if isinstance(att, str):
                             att = [att]
 
                         for a in att:
-                            # Case 1: attachment is referencing a STEP ID
+
+                            # 1. If refers to a step ID
                             if a in results:
                                 step_result = results[a]
-                                if isinstance(step_result, dict) and step_result.get("type") == "file":
-                                    attachments.append(step_result["value"])
-                                else:
-                                    print(f"[WARN] Step '{a}' exists but is not a file-producing step.")
-                                continue
 
-                            # Case 2: Try matching "output_from_<step>" pattern
-                            if a.startswith("output_from_"):
-                                real_step = a[len("output_from_"):]
-                                if real_step in results and results[real_step].get("type") == "file":
-                                    attachments.append(results[real_step]["value"])
+                                # Try common patterns
+                                file_path = (
+                                    step_result.get("value") 
+                                    or step_result.get("path")
+                                    or step_result.get("file")
+                                )
+                                if file_path and os.path.exists(file_path):
+                                    attachments.append(file_path)
                                     continue
 
-                            # Case 3: Treat as literal file path
+                                # If step returned {"type": "file"}
+                                if step_result.get("type") == "file":
+                                    # Most reliable fallback
+                                    possible = step_result.get("value")
+                                    if possible and os.path.exists(possible):
+                                        attachments.append(possible)
+                                        continue
+
+                                print(f"[WARN] Step '{a}' found but it does not contain a file path.")
+                                continue
+
+                            # 2. If it's a clean file name inside OUT_DIR
+                            out_test = OUT_DIR / a
+                            if out_test.exists():
+                                attachments.append(str(out_test))
+                                continue
+
+                            # 3. If it's a direct filesystem path
                             if os.path.exists(a):
                                 attachments.append(a)
-                            else:
-                                print(f"[WARN] Attachment '{a}' does not match any step or file.")
+                                continue
+
+                            # 4. If it's something like 'step3.file' or similar junk
+                            if "." in a:
+                                # Try treat as filename inside outputs
+                                candidate = OUT_DIR / a.split(".")[-1]  # fallback guess
+                                if candidate.exists():
+                                    attachments.append(str(candidate))
+                                    continue
+
+                            print(f"[WARN] Could not resolve attachment: {a}")
 
                 # fallback: try top-level fields
                 if not email_to:
