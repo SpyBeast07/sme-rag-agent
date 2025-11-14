@@ -124,7 +124,7 @@ def chat(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/workflow") # Multi-step workflow
+@app.post("/workflow") # Multi-step workflow -- manual pipelines
 def workflow(req: WorkflowRequest):
     payload = req.dict()
     try:
@@ -146,7 +146,7 @@ def download(filename: str):
 class PlanRequest(BaseModel):
     task: str
 
-@app.post("/plan_and_run")
+@app.post("/plan_and_run") # LLM-planned task execution
 def plan_and_run(req: PlanRequest):
     try:
         plan = agent.plan_task(req.task)
@@ -167,6 +167,31 @@ class FeedbackRequest(BaseModel):
 def feedback(req: FeedbackRequest):
     add_feedback(req.dict())
     return {"status": "saved"}
+
+class AgentRequest(BaseModel):
+    query: str
+
+@app.post("/agent") # Agent router: rule-based or LLM-planned
+def agent_router(req: AgentRequest):
+    text = req.query.lower()
+
+    # If user explicitly asks for a handout/report → rule-based workflow
+    if "create handout" in text or "make report" in text:
+        payload = {
+            "task": "create_handout",
+            "title": "Auto Handout",
+            "audience": "general",
+            "email_to": None,
+            "create_pdf": True,
+            "create_docx": True
+        }
+        return agent.run_workflow(payload)
+
+    # otherwise → let LLM plan
+    plan = agent.plan_task(req.query)
+    result = agent.execute_plan(plan)
+    return {"plan": plan, "result": result}
+
 
 
 # Run with:
@@ -200,7 +225,7 @@ def feedback(req: FeedbackRequest):
 # • System shouldn’t crash.
 # • Should tell user: “RAG unavailable, answering without context.” (Depending on how strict you want to be.)
 
-# Check multi-step workflows
+# Test 5: Check multi-step workflows
 # curl -X POST http://127.0.0.1:8000/workflow \
 #   -H "Content-Type: application/json" \
 #   -d '{
@@ -212,7 +237,47 @@ def feedback(req: FeedbackRequest):
 #         "create_docx": true
 #       }'
 
-# Test 5 — Plan and Run
+# Test 6 — Plan and Run
 # curl -X POST http://127.0.0.1:8000/plan_and_run \
 #   -H "Content-Type: application/json" \
 #   -d '{"task": "Create a one page handout on cross contamination, convert to PDF and email to kushagra7503@gmail.com"}'
+
+
+
+# Test 7 — Test /agent router
+
+# Rule-based workflow path
+# curl -X POST http://127.0.0.1:8000/agent \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "Create handout on cross contamination"}'
+
+# • It should NOT generate a plan
+# • It should run:
+#       run_workflow → PDF + DOCX generation
+
+# LLM planning path
+# curl -X POST http://127.0.0.1:8000/agent \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "Generate a quiz on foodborne pathogens and mail me the results"}'
+
+
+# Test Chat + Memory
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query":"What is salmonella?"}'
+
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query":"How does this spread?"}'
+
+
+
+# Test plan JSON validity
+# curl -X POST http://127.0.0.1:8000/plan_and_run \
+#   -H "Content-Type: application/json" \
+#   -d '{"task":"Make a 1-page summary about allergens and mail it"}'
+
+# Test attachment resolution
+# curl -X POST http://127.0.0.1:8000/agent \
+#   -H "Content-Type: application/json" \
+#   -d '{"query":"Create a quiz on bacteria and mail me the PDF"}'

@@ -1,7 +1,7 @@
 # agent/agent.py
 import os
 import time
-from .tools import generate_pdf_report, generate_docx_report, send_email, OUT_DIR
+from agent.tools import generate_pdf_report, generate_docx_report, send_email, OUT_DIR
 from agent.feedback_store import load_feedback
 from typing import Dict, Any, List, Optional
 from pathlib import Path
@@ -24,6 +24,7 @@ except Exception:
 LMSTUDIO_URL = os.getenv("LMSTUDIO_URL")  # e.g. http://localhost:11434/v1/generate (user might set)
 LM_MODEL_NAME = os.getenv("LM_MODEL_NAME", "Mistral-7B-Instruct-v0.2")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+DEFAULT_EMAIL = os.getenv("DEFAULT_EMAIL")
 
 class SMEAgent:
     def __init__(self):
@@ -57,6 +58,15 @@ class SMEAgent:
                 raise RuntimeError(f"Failed to call Gemini: {e}")
 
         raise RuntimeError("No LLM configured. Set LMSTUDIO_URL or GEMINI_API_KEY in .env")
+    
+    def _build_chat_context(self, last_n=5):
+        msgs = self.memory[-last_n:]
+        formatted = ""
+        for m in msgs:
+            role = m["role"]
+            text = m["text"]
+            formatted += f"{role.upper()}: {text}\n"
+        return formatted
 
     def _fetch_feedback_context(self, query: str):
         feedback_data = load_feedback()
@@ -81,10 +91,14 @@ class SMEAgent:
         contexts = [d["text"] for d in docs]
 
         # build prompt: put context then question, ask for concise answer and cite sources (metadata)
+        chat_history = self._build_chat_context(last_n=6)
         ctx_text = "\n\n---\n\n".join(contexts)
         feedback_context = self._fetch_feedback_context(query)
         prompt = f"""
 You are a helpful Food Safety SME.
+
+Here is recent chat history (use it for context if useful):
+{chat_history}
 
 Here is user feedback memory that MUST influence your answer (if relevant):
 {feedback_context}
@@ -92,11 +106,10 @@ Here is user feedback memory that MUST influence your answer (if relevant):
 Here is RAG context:
 {ctx_text}
 
-Question:
+User question:
 {query}
 
-Give an improved answer compared to any previously marked 'bad' responses.
-Be accurate and cite sources.
+Give a clear, improved answer. Cite sources when possible.
 """
 
         # call model
@@ -198,9 +211,13 @@ Produce the handout as plain text (with headings)."""
         Ask the LLM to create a simple JSON execution plan.
         Returns a dict with key "steps": list of step dicts.
         """
+        chat_history = self._build_chat_context(last_n=6)
         prompt = f"""
 You are a planning assistant. Convert the following task into a JSON plan.
-Only return valid JSON. No explanations. Steps should be small.
+Only return valid JSON. No explanations.
+
+Here is previous conversation for context (if relevant):
+{chat_history}
 
 TASK:
 {task_description}
@@ -216,6 +233,17 @@ Your JSON MUST follow this structure:
         "depends_on": []
         }}
     ]
+}}
+Rules:
+- If the user's task description contains an email address, use that email in the send_email step.
+- If the user asks to send email and does NOT specify an email, use the DEFAULT email "kushagra7503@gmail.com".
+- For send_email, ALWAYS use structured JSON:
+
+{{
+    "to": "<email>",
+    "subject": "...",
+    "body": "...",
+    "attachments": ["step3"]
 }}
 """
         plan_text = self._call_llm(prompt)
@@ -304,6 +332,11 @@ Your JSON MUST follow this structure:
                     email_to = raw_input.get("to")
                     subject = raw_input.get("subject", subject)
                     body = raw_input.get("body", body)
+
+                    # If user asked for email but did NOT specify address → fill default
+                    if "send" in input_text.lower() and not email_to:
+                        email_to = DEFAULT_EMAIL
+
                     # attachments may reference filenames or step ids
                     att = raw_input.get("attachment") or raw_input.get("attachments")
                     if att:
