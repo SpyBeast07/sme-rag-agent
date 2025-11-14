@@ -96,3 +96,5 @@ yarn-error.log
 data/cache/
 data/temp/
 data/intermediate/
+
+.DS_Store

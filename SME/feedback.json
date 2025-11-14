@@ -1,0 +1,14 @@
+[
+  {
+    "query": "What is cross contamination?",
+    "answer": "Cross-contamination is the process by which harmful microorganisms, such as bacteria like Salmonella, are transferred from one food item to another, or from a contaminated surface or utensil to food (reprint 2025-26 unit ii - nutrition, food science and technology 81). This often leads to food infection, especially when pathogens from raw foods come into contact with foods that will not be cooked further.\n\n**Examples from the provided text include:**\n*   **Using the same cutting board:** When a cook uses a chopping board to cut raw meat or poultry and then uses the same board without cleaning it for another food that doesn't require cooking, such as salad (reprint 2025-26 unit ii - nutrition, food science and technology 81).\n*   **Improper storage:** Storing raw meat, poultry, and seafood in the refrigerator without keeping them separate from other foods (reprint 2025-26).\n*   **Reusing unwashed plates:** Placing cooked food on an unwashed plate that previously held raw meat (reprint 2025-26).\n*   **Poor hygiene:** An infected food handler not washing hands with soap after using the bathroom and before touching food (reprint 2025-26 unit ii - nutrition, food science and technology 81).",
+    "feedback": "bad",
+    "corrected_answer": "Cross-contamination means the transfer of harmful microbes from raw foods to ready-to-eat foods, usually via hands, utensils, or cutting boards."
+  },
+  {
+    "query": "What is cross contamination?",
+    "answer": "Cross-contamination is the transfer of harmful microbes from raw foods to ready-to-eat foods, usually via hands, utensils, or cutting boards (User Feedback).\n\nIt often occurs when a cook cuts raw meat or poultry on a chopping board and then, without cleaning it, uses the same board for another food that does not involve any cooking, such as a salad. This allows organisms like *Salmonella* to spread from the raw food to the ready-to-eat food (reprint 2025-26 unit ii - nutrition, food science and technology 81, reprint 2025-26 29).\n\nTo prevent cross-contamination, it is recommended to:\n*   Store raw meat, poultry, and seafood away from other foods in the refrigerator.\n*   Use separate cutting boards for raw meat and for fruits and vegetables.\n*   Never place cooked food on an unwashed plate that previously held raw meat (reprint 2025-26 unit ii - nutrition, food science and technology 81).",
+    "feedback": "good",
+    "corrected_answer": null
+  }
+]

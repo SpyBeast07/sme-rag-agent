@@ -143,11 +143,64 @@ def download(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(fpath, media_type="application/octet-stream", filename=filename)
 
+class PlanRequest(BaseModel):
+    task: str
+
+@app.post("/plan_and_run")
+def plan_and_run(req: PlanRequest):
+    try:
+        plan = agent.plan_task(req.task)
+        result = agent.execute_plan(plan)
+        return {"plan": plan, "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+from agent.feedback_store import add_feedback
+
+class FeedbackRequest(BaseModel):
+    query: str
+    answer: str
+    feedback: str  # "good" or "bad"
+    corrected_answer: str | None = None
+
+@app.post("/feedback")
+def feedback(req: FeedbackRequest):
+    add_feedback(req.dict())
+    return {"status": "saved"}
+
+
 # Run with:
 # python3 -m uvicorn agent.main_api:app --reload
 
 # Example curl commands:
 
+# Test 1 — Basic Question
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "What is cross contamination?", "top_k": 5}'
+
+# Test 2 — Follow-up Question (tests memory)
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "What is cross contamination?"}'
+
+# Test 3 — Non-RAG Query
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "Who won the 2022 FIFA World Cup?"}'
+
+# Test 4 — RAG Failover Behavior
+# Temporarily stop Elasticsearch: docker stop es01
+# Then run:
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "What is food hygiene?"}'
+
+# Expected:
+# • System shouldn’t crash.
+# • Should tell user: “RAG unavailable, answering without context.” (Depending on how strict you want to be.)
+
+# Check multi-step workflows
 # curl -X POST http://127.0.0.1:8000/workflow \
 #   -H "Content-Type: application/json" \
 #   -d '{
@@ -158,3 +211,8 @@ def download(filename: str):
 #         "create_pdf": true,
 #         "create_docx": true
 #       }'
+
+# Test 5 — Plan and Run
+# curl -X POST http://127.0.0.1:8000/plan_and_run \
+#   -H "Content-Type: application/json" \
+#   -d '{"task": "Create a one page handout on cross contamination, convert to PDF and email to kushagra7503@gmail.com"}'
