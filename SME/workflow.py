@@ -1,3 +1,23 @@
+"""
+workflow.py — Interactive CLI orchestrator for the SME Agent system.
+
+This script provides a guided setup and testing interface for the entire SME pipeline:
+    • Environment + dependency validation
+    • Elasticsearch startup and health checks
+    • Metadata generation and database building
+    • Post-build verification (mapping, embeddings, chunk levels)
+    • RAG testing (retriever + query RAG)
+    • Agent testing (workflows, routing, planning, memory)
+    • Human feedback loop testing (/feedback → dynamic answer correction)
+
+It acts as the main control panel for:
+    - Building the vector DB (chunking → embeddings → indexing)
+    - Running FastAPI agent endpoints (/chat, /workflow, /plan_and_run, /agent)
+    - Interactively validating hybrid retrieval and LLM responses
+
+This file is not part of the FastAPI server.
+It is a developer-facing orchestration tool to manage, test, and verify the entire SME system end-to-end.
+"""
 import os
 import time
 import subprocess
