@@ -26,6 +26,73 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import utils
 import re
 
+def generate_filename_from_query(query: str, ext: str = ".pdf") -> str:
+    """
+    Generate filenames like:
+        quiz_salmonella.pdf
+        handout_allergens.docx
+        summary_food_poisoning.pdf
+
+    Extracts:
+        - task (quiz, summary, handout, report, guideline, analysis)
+        - topic (salmonella, allergens, food poisoning, etc.)
+
+    Falls back safely if extraction fails.
+    """
+
+    q = query.lower()
+
+    # 1️⃣ Extract TASK keyword
+    task_keywords = [
+        "quiz", "handout", "summary", "report",
+        "guideline", "guide", "analysis"
+    ]
+    task = "document"
+    for t in task_keywords:
+        if t in q:
+            task = t
+            break
+    if task == "guide":
+        task = "guideline"
+
+    # 2️⃣ Remove emails
+    q = re.sub(r"\S+@\S+", "", q)
+
+    # 3️⃣ Extract topic
+    topic = None
+    topic_match = re.search(r"(on|about)\s+([a-zA-Z ]+)", q)
+    if topic_match:
+        topic = topic_match.group(2)
+
+    # Fallback → last 2–3 words
+    if not topic:
+        topic = " ".join(q.split()[-3:])
+
+    # 4️⃣ Clean topic
+    topic = topic.strip()
+    topic = re.sub(r"[^a-zA-Z0-9 ]", " ", topic)
+    topic = re.sub(r"\s+", "_", topic)
+
+    # Remove stop words
+    stop_words = ["create", "make", "generate", "send", "give", "it", "to", "me", "pdf", "doc", "docx", "mail", "email"]
+    topic = "_".join([w for w in topic.split("_") if w not in stop_words])
+
+    if not topic:
+        topic = "output"
+
+    # 5️⃣ Clean task
+    task = re.sub(r"[^a-zA-Z0-9]", "", task)
+
+    # 6️⃣ Build filename
+    filename = f"{task}_{topic}{ext}".lower()
+    filename = re.sub(r"_+", "_", filename).strip("_")
+
+    # 7️⃣ Trim long filenames
+    if len(filename) > 80:
+        filename = filename[:80] + ext
+
+    return filename
+
 def clean_text_for_pdf(text: str) -> str:
     """Prevents ReportLab crashes by sanitizing the content."""
     # Remove XML tokens
@@ -39,13 +106,18 @@ def clean_text_for_pdf(text: str) -> str:
 
     return text
 
-def generate_pdf_report(text: str, filename: str = "report.pdf"):
+def generate_pdf_report(text: str, filename: Optional[str] = None, query: Optional[str] = None):
     """Safe PDF generation (prevents ReportLab width errors)."""
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.pagesizes import A4
 
     text = clean_text_for_pdf(text)
+    
+    if query and not filename:
+        filename = generate_filename_from_query(query, ".pdf")
+    elif not filename:
+        filename = "report.pdf"
 
     doc_path = OUT_DIR / filename
     styles = getSampleStyleSheet()
@@ -64,10 +136,15 @@ def generate_pdf_report(text: str, filename: str = "report.pdf"):
 
     return str(doc_path)
 
-def generate_docx_report(content: str, filename: str = "report.docx") -> str:
+def generate_docx_report(content: str, filename: Optional[str] = None, query: Optional[str] = None) -> str:
     """
     Generate a DOCX from content and return absolute path.
     """
+    if query and not filename:
+        filename = generate_filename_from_query(query, ".docx")
+        filename = filename.lower()
+    elif not filename:
+        filename = "report.docx"
     out_path = _ensure_filename(filename, ".docx")
     doc = Document()
     for para in content.split("\n"):

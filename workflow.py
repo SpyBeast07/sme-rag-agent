@@ -90,10 +90,13 @@ def run_request(method, endpoint, payload=None):
     url = f"{FASTAPI_URL}{endpoint}"
     print(f"\n🔸 ENDPOINT: {url}")
     try:
+        # Longer timeout for heavier endpoints
+        timeout = 90 if endpoint in ["/agent", "/plan_and_run", "/workflow"] else 20
+
         if method == "POST":
-            r = requests.post(url, json=payload, timeout=20)
+            r = requests.post(url, json=payload, timeout=timeout)
         else:
-            r = requests.get(url, timeout=20)
+            r = requests.get(url, timeout=timeout)
 
         print("\n🟦 REQUEST:")
         print(pretty(payload) if payload else "(no body)")

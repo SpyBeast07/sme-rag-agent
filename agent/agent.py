@@ -1,7 +1,7 @@
 # agent/agent.py
 import os
 import time
-from agent.tools import generate_pdf_report, generate_docx_report, send_email, OUT_DIR
+from agent.tools import generate_filename_from_query, generate_pdf_report, generate_docx_report, send_email, OUT_DIR
 from agent.feedback_store import load_feedback
 from typing import Dict, Any, List, Optional
 from pathlib import Path
@@ -302,6 +302,9 @@ Rules:
                     # append with separator
                     input_text = input_text + "\n\n[dependency:" + dep + "]\n" + dep_str
 
+            # Get original user query for filename generation
+            original_query = self.memory[-1]["text"] if self.memory else input_text
+
             # ---- ACTION HANDLERS ----
             if action == "rag_search":
                 # input_text is query
@@ -313,11 +316,13 @@ Rules:
                 results[sid] = {"type": "llm", "value": gen}
 
             elif action == "create_pdf":
-                pdf_path = generate_pdf_report(input_text, filename=f"{sid}.pdf")
+                filename_pdf = generate_filename_from_query(original_query, ext=".pdf")
+                pdf_path = generate_pdf_report(input_text, filename=filename_pdf)
                 results[sid] = {"type": "file", "value": pdf_path}
 
             elif action == "create_docx":
-                docx_path = generate_docx_report(input_text, filename=f"{sid}.docx")
+                filename_docx = generate_filename_from_query(original_query, ext=".docx")
+                docx_path = generate_docx_report(input_text, filename=filename_docx)
                 results[sid] = {"type": "file", "value": docx_path}
 
             elif action == "send_email":
