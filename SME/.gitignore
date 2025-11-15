@@ -1,13 +1,5 @@
-# ---------------------------
 # Python
-# ---------------------------
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pdb
-*.pkl
-*.pickle
 
 # Virtual environments
 venv/
@@ -15,50 +7,27 @@ env/
 .venv/
 env.bak/
 
-# Jupyter
-.ipynb_checkpoints/
-
-# ---------------------------
 # Project Secrets
-# ---------------------------
 .env
 *.env
 .env.*
 
-# ---------------------------
 # Logs, Cache & Runtime
-# ---------------------------
 *.log
 logs/
-*.sqlite3
 .DS_Store
-
-# HuggingFace / Transformers Cache
-~/.cache/huggingface/
-~/.cache/torch/
-~/.cache/
-cache/
-hf_cache/
-rag_cache/
 
 # SentenceTransformer cache
 data/.sentence_transformers_cache/
 
-# Tqdm logs
-.tqdm/
-
-# ---------------------------
 # Elasticsearch
-# ---------------------------
 esdata/
 elasticsearch/
 elasticsearch-data/
 docker-data/
 *.pid
 
-# ---------------------------
 # Reports & User-Generated Files
-# ---------------------------
 reports/outputs/*.pdf
 reports/outputs/*.docx
 reports/outputs/*.pptx
@@ -68,33 +37,12 @@ reports/outputs/*.md
 # Do NOT ignore the folder itself
 !reports/outputs/
 
-# ---------------------------
-# Build Artifacts
-# ---------------------------
-dist/
-build/
-*.egg-info/
-
-# ---------------------------
-# Node / Frontend (if added later)
-# ---------------------------
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# ---------------------------
 # Editor / IDE Files
-# ---------------------------
 .vscode/
-.idea/
-*.swp
-*.swo
 
-# ---------------------------
 # Generated Data / Raw Data
-# ---------------------------
 data/cache/
 data/temp/
 data/intermediate/
 
-.DS_Store
+feedback.json

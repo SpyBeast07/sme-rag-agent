@@ -1,9 +1,10 @@
 torch
 datasets
-elasticsearch
+elasticsearch==8.12.1
 tqdm
 python-dotenv
 
+pandas
 fastapi
 uvicorn
 langchain

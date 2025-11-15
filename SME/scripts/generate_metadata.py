@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 # Path to your data directory
-DATA_DIR = "../data"
+DATA_DIR = "data"
 
 metadata_records = []
 
