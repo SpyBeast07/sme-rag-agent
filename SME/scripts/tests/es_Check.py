@@ -10,7 +10,7 @@ es = Elasticsearch(ES_URL)
 if es.ping():
     print("✅ Elasticsearch is connected and running!")
 else:
-    print("❌ Could not connect to Elasticsearch.")
+    print("❌ Could not connect to Elasticsearch. Run:\n   docker-compose up -d\n From the project root (SME/).")
 
 es = Elasticsearch(ES_URL)
 count = es.count(index=INDEX_NAME)

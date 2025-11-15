@@ -192,90 +192,89 @@ def agent_router(req: AgentRequest):
 
 
 
-# Run with:
-# python3 -m uvicorn agent.main_api:app --reload
+# ----------------------
+# Test cases (to be run via curl or Postman)
+# ----------------------
 
-# Example curl commands:
+# SECTION 1 — RAG + CHAT tests
 
-# Test 1 — Basic Question
-# curl -X POST http://127.0.0.1:8000/chat \
+# Test 1 — Basic RAG Answer
+# # ccurl -X POST http://127.0.0.1:8000/chat \
 #   -H "Content-Type: application/json" \
 #   -d '{"query": "What is cross contamination?", "top_k": 5}'
 
-# Test 2 — Follow-up Question (tests memory)
+# Test 2 — Memory Continuity
 # curl -X POST http://127.0.0.1:8000/chat \
 #   -H "Content-Type: application/json" \
-#   -d '{"query": "What is cross contamination?"}'
+#   -d '{"query": "What is salmonella?"}'
+
+# curl -X POST http://127.0.0.1:8000/chat \
+#   -H "Content-Type: application/json" \
+#   -d '{"query": "How does this spread?"}'
 
 # Test 3 — Non-RAG Query
 # curl -X POST http://127.0.0.1:8000/chat \
 #   -H "Content-Type: application/json" \
 #   -d '{"query": "Who won the 2022 FIFA World Cup?"}'
 
-# Test 4 — RAG Failover Behavior
-# Temporarily stop Elasticsearch: docker stop es01
-# Then run:
+
+# SECTION 2 — RAG Failover Test
 # curl -X POST http://127.0.0.1:8000/chat \
 #   -H "Content-Type: application/json" \
 #   -d '{"query": "What is food hygiene?"}'
 
-# Expected:
-# • System shouldn’t crash.
-# • Should tell user: “RAG unavailable, answering without context.” (Depending on how strict you want to be.)
 
-# Test 5: Check multi-step workflows
+# SECTION 3 — WORKFLOW ENGINE
 # curl -X POST http://127.0.0.1:8000/workflow \
 #   -H "Content-Type: application/json" \
 #   -d '{
 #         "task": "create_handout",
 #         "title": "Cross Contamination Prevention",
 #         "audience": "food handlers",
-#         "email_to": "kushagra7503@gmail.com",
+#         "email_to": "your_email_here@gmail.com",
 #         "create_pdf": true,
 #         "create_docx": true
 #       }'
 
-# Test 6 — Plan and Run
+
+# SECTION 4 — PLAN AND RUN (LLM Planned Multi-Step Execution)
 # curl -X POST http://127.0.0.1:8000/plan_and_run \
 #   -H "Content-Type: application/json" \
-#   -d '{"task": "Create a one page handout on cross contamination, convert to PDF and email to kushagra7503@gmail.com"}'
+#   -d '{"task": "Create a one page handout on cross contamination, convert to PDF and email to your_email"}'
 
 
+# SECTION 5 — AGENT ROUTER
 
-# Test 7 — Test /agent router
-
-# Rule-based workflow path
+# 1) Rule-Based Workflow Path (NO plan generation)
 # curl -X POST http://127.0.0.1:8000/agent \
 #   -H "Content-Type: application/json" \
 #   -d '{"query": "Create handout on cross contamination"}'
 
-# • It should NOT generate a plan
-# • It should run:
-#       run_workflow → PDF + DOCX generation
-
-# LLM planning path
+# 2) LLM Planning Path
 # curl -X POST http://127.0.0.1:8000/agent \
 #   -H "Content-Type: application/json" \
-#   -d '{"query": "Generate a quiz on foodborne pathogens and mail me the results"}'
+#   -d '{"query": "Create handout on cross contamination"}'
 
 
-# Test Chat + Memory
+# SECTION 6 — FEEDBACK MEMORY TEST
+
+# Test — Store Feedback
+# curl -X POST http://127.0.0.1:8000/feedback \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#         "query": "What is salmonella?",
+#         "answer": "bad answer from before",
+#         "feedback": "bad",
+#         "corrected_answer": "Correct explanation..."
+#       }'
+
+# Test — Ask again
 # curl -X POST http://127.0.0.1:8000/chat \
 #   -H "Content-Type: application/json" \
 #   -d '{"query":"What is salmonella?"}'
 
-# curl -X POST http://127.0.0.1:8000/chat \
-#   -H "Content-Type: application/json" \
-#   -d '{"query":"How does this spread?"}'
 
-
-
-# Test plan JSON validity
-# curl -X POST http://127.0.0.1:8000/plan_and_run \
-#   -H "Content-Type: application/json" \
-#   -d '{"task":"Make a 1-page summary about allergens and mail it"}'
-
-# Test attachment resolution
+# SECTION 7 — ATTACHMENT RESOLUTION TEST
 # curl -X POST http://127.0.0.1:8000/agent \
 #   -H "Content-Type: application/json" \
 #   -d '{"query":"Create a quiz on bacteria and mail me the PDF"}'

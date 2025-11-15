@@ -11,7 +11,7 @@ Pipeline:
 
 import os
 import google.generativeai as genai
-from rag.retriever import RAGRetriever
+from retriever import RAGRetriever
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,7 +24,7 @@ if GEMINI_API_KEY is None:
     raise RuntimeError("❌ GEMINI_API_KEY not found in .env")
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel(GOOGLE_MODEL)
+model = genai.GenerativeModel(GEMINI_MODEL)
 
 # === Load Retriever ===
 retriever = RAGRetriever(
