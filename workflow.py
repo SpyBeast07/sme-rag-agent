@@ -45,7 +45,7 @@ def user_input(message):
 
 def check_fastapi_running():
     try:
-        requests.get(FASTAPI_URL + "/health", timeout=2)
+        requests.get(FASTAPI_URL + "/health", timeout=90)
         return True
     except:
         return False
@@ -91,7 +91,7 @@ def run_request(method, endpoint, payload=None):
     print(f"\n🔸 ENDPOINT: {url}")
     try:
         # Longer timeout for heavier endpoints
-        timeout = 90 if endpoint in ["/agent", "/plan_and_run", "/workflow"] else 20
+        timeout = 90
 
         if method == "POST":
             r = requests.post(url, json=payload, timeout=timeout)
@@ -237,7 +237,7 @@ def setup_flow():
             resp = requests.post(
                 f"{ES}/_search?size=10",
                 json={"_source": ["text"], "query": {"match_all": {}}},
-                timeout=10
+                timeout=90
             )
             resp.raise_for_status()
             data = resp.json()
@@ -260,7 +260,7 @@ def setup_flow():
             resp = requests.post(
                 f"{ES}/_search?size=1",
                 json={"_source": ["embedding"], "query": {"match_all": {}}},
-                timeout=10
+                timeout=90
             )
             resp.raise_for_status()
             data = resp.json()
@@ -281,7 +281,7 @@ def setup_flow():
         # -------------------------------
         print("\n4️⃣  Checking document count...")
         try:
-            resp = requests.get(f"{ES}/_count", timeout=10)
+            resp = requests.get(f"{ES}/_count", timeout=90)
             resp.raise_for_status()
             data = resp.json()
             print(pretty(data))
@@ -296,7 +296,7 @@ def setup_flow():
         # -------------------------------
         print("\n5️⃣  Checking index mapping...")
         try:
-            resp = requests.get(f"{ES}/_mapping", timeout=10)
+            resp = requests.get(f"{ES}/_mapping", timeout=90)
             resp.raise_for_status()
             data = resp.json()
             print(pretty(data))
@@ -425,13 +425,19 @@ def agent_testing():
         audience = user_input("Enter audience (e.g., food handlers): ")
         email = user_input("Enter email: ")
 
+        if user_input("Do you want to create pdf (y/n): ") == "y":
+            pdf = True
+
+        if user_input("Do you want to create docx (y/n): ") == "y":
+            docx = True
+
         payload = {
             "task": "create_handout",
             "title": title,
             "audience": audience,
             "email_to": email,
-            "create_pdf": True,
-            "create_docx": True
+            "create_pdf": pdf,
+            "create_docx": docx
         }
 
         run_request("POST", "/workflow", payload)
@@ -488,7 +494,7 @@ def agent_testing():
         chat_resp = requests.post(
             "http://127.0.0.1:8000/chat",
             json={"query": q},
-            timeout=30
+            timeout=90
         )
 
         try:

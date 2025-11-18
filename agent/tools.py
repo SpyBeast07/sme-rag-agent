@@ -200,7 +200,7 @@ def send_email(
             return False, f"Failed to attach {path}: {e}"
 
     try:
-        server = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
+        server = smtplib.SMTP(smtp_host, smtp_port, timeout=90)
         if use_tls:
             server.starttls()
         server.login(smtp_user, smtp_pass)

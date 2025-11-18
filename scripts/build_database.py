@@ -223,9 +223,6 @@ def hierarchical_chunk(text):
 # ------------------------------------------------------------
 embed_general = SentenceTransformer(MAIN_EMBED_MODEL)
 
-# (OPTIONAL)
-# embed_domain = SentenceTransformer("pritamdeka/S-Biomed-Roberta-snli-multinli-stsb")
-
 
 # ------------------------------------------------------------
 # 8. Process all documents
