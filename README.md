@@ -56,6 +56,12 @@ FastAPI-based SME Agent with:
 
 ---
 
+# Architecture Diagram
+
+![Architecture Diagram](images/archDiagram.png)
+
+---
+
 # 📁 Project Structure
 
 ```bash
